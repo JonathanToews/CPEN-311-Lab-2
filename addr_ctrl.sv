@@ -45,7 +45,7 @@ begin
 	if(lower_audio_enable) lower_audio <= audio_in;
 	else lower_audio <= lower_audio;
 	
-	if(merge_audio_enable) audio_out <= {upper_audio, lower_audio};
+	if(merge_audio_enable) audio_out <= {upper_audio, lower_audio}; // this needs to be changed
 	else audio_out <= audio_out;
 end
 
@@ -67,7 +67,6 @@ begin
 		FLASH_LOWER: 	if (finish_read)	next_state = INC_ADDR;
 							else					next_state = FLASH_LOWER;
 		INC_ADDR:								next_state = FLASH_UPPER;
-		
 		FLASH_UPPER:	if (finish_read)	next_state = DEC_ADDR;
 							else					next_state = FLASH_UPPER;
 		DEC_ADDR:								next_state = OUTPUT;
