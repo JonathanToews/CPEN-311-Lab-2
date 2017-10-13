@@ -14,29 +14,40 @@ bit 3-6: state bits
 bit 7: future expansion
 
 */
-localparam IDLE			= 6'b00000_000;
-localparam CONTINUE		= 6'b00001_000;
-localparam FLASH_LOWER	= 6'b00010_100;
-localparam INC_ADDR		= 6'b00011_001;
-localparam FLASH_UPPER	= 6'b00100_100;
-localparam DEC_ADDR		= 6'b00101_010;
-localparam OUTPUT			= 6'b00110_000;
-localparam INC_BY_2		= 6'b00111_000;
-localparam DEC_BY_2		= 6'b01000_000;
-localparam FINISH			= 6'b01001_000;
+localparam IDLE			= 8'b00000_0000;
+localparam CONTINUE		= 8'b00001_0000;
+localparam FLASH_LOWER	= 8'b00010_1000;
+localparam INC_ADDR		= 8'b00011_0010;
+localparam FLASH_UPPER	= 8'b00100_1000;
+localparam DEC_ADDR		= 8'b00101_0100;
+localparam OUTPUT			= 8'b00110_0001;
+localparam INC_BY_2		= 8'b00111_0000;
+localparam DEC_BY_2		= 8'b01000_0000;
+localparam FINISH			= 8'b01001_0000;
 
 
-assign read_start = state[2];
+assign read_start = state[3];
+assign upper_audio_enable = state[2];
 assign upper_audio_enable = state[1];
-assign upper_audio_enable = state[0];
+assign merge_audio_enable = state[0];
 
-logic [5:0] next_state;
-reg [5:0] state;
+logic [7:0] next_state;
+reg [7:0] state;
+reg [7:0] upper_audio;
+reg [7:0] lower_audio;
 
-
+// audio registers
 always_ff(posedge clk or negedge reset_all)
 begin
-	audio_in_1 <= audio_in;
+	if(upper_audio_enable) upper_audio <= audio_in;
+	else upper_audio <= upper_audio;
+	
+	if(lower_audio_enable) lower_audio <= audio_in;
+	else lower_audio <= lower_audio;
+	
+	if(merge_audio_enable) audio_out <= {upper_audio, lower_audio};
+	else audio_out <= audio_out;
+end
 
 
 
