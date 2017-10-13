@@ -53,13 +53,28 @@ end
 
 always_ff(posedge clk or negedge reset_all)
 begin
-	if(reset_all) state <= IDLE;
+	if(reset_all) state <= FINISH;
 	else state <= next_state;
 end
 
 always_comb
 begin
-
+	case(state)
+		IDLE: 			if (key_start) 	next_state = CONTINUE;
+							else					next_state = IDLE;
+		CONTINUE: 		if (clock_start) 	next_state = FLASH_LOWER;
+							else					next_state = CONTINUE;
+		FLASH_LOWER: 	if (finish_read)	next_state = INC_ADDR;
+							else					next_state = FLASH_LOWER;
+		INC_ADDR:								next_state = FLASH_UPPER;
+		
+		FLASH_UPPER:	if (finish_read)	next_state = DEC_ADDR;
+							else					next_state = FLASH_UPPER;
+		DEC_ADDR:								next_state = OUTPUT;
+		
+		OUTPUT: if ()
+		
+end
 
 
 
