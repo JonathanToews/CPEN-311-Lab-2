@@ -22,6 +22,7 @@ bit 4: read_start
 bit 5-8: state bits
 bit 9: future expansion
 */
+
 localparam IDLE			= 10'b00000_00000;
 localparam CONTINUE		= 10'b00001_00001;
 localparam FLASH_LOWER	= 10'b00010_10001;
@@ -55,24 +56,39 @@ reg [7:0] lower_audio;
 // audio registers
 always_ff @(posedge clk or negedge reset_all)
 begin
-	if(read_direction)
+	if(!reset_all)
+		begin
+			lower_audio <= 0;
+			upper_audio <= 0;
+			audio_out <= 0;
+			addr_out <= 0;
+		end
+	else
+		begin
+			// address control logic. Please check for glitches
+			if(state == INC_ADDR) addr_out <= addr_out + 1'b1;
+			else if (state == DEC_ADDR) addr_out <= addr_out - 1'b1;
+			else if (state == INC_BY_2) addr_out <= addr_out + 2'b10;
+			else if (state == DEC_BY_2) addr_out <= addr_out - 2'b10;
+			else addr_out <= addr_out;
+		
+			if(upper_audio_en) upper_audio <= audio_in;
+			else upper_audio <= upper_audio;
 	
-	if(upper_audio_en) upper_audio <= audio_in;
-	else upper_audio <= upper_audio;
+			if(lower_audio_en) lower_audio <= audio_in;
+			else lower_audio <= lower_audio;
 	
-	if(lower_audio_en) lower_audio <= audio_in;
-	else lower_audio <= lower_audio;
-	
-	if(audio_en == 0) audio_out <= 0;
-	else if(merge_audio_en) audio_out <= {upper_audio, lower_audio}; 
-	else audio_out <= audio_out;
-end
+			if(audio_en == 0) audio_out <= 0;
+			else if(merge_audio_en) audio_out <= {upper_audio, lower_audio}; 
+			else audio_out <= audio_out;
+		end
+end	
 
 
 // state register
 always_ff @(posedge clk or negedge reset_all)
 begin
-	if(reset_all) state <= FINISH;
+	if(!reset_all) state <= FINISH;
 	else state <= next_state;
 end
 
