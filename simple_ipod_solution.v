@@ -310,6 +310,20 @@ wire Sample_Clk_Signal;
 // Insert your code for Lab2 here!
 //
 
+parameter FORWARD = 1'b0;
+parameter BACKWARD = 1'b1;
+reg direction;
+
+always_ff@(posedge CLOCK_50)
+begin
+	if(kbd_received_ascii_code == character_B)
+		direction <= BACKWARD;
+	else if(kbd_received_ascii_code == character_F)
+		direction <= FORWARD;
+	else direction <= direction;
+end
+
+
 wire start_read_pulse;
 wire finish_read_pulse;
 wire [15:0] data_from_flash;
@@ -336,21 +350,22 @@ flash_read_fsm flash_read_fsm_impl(
 addr_ctrl address_control_module(
 .clock_start(music_clock_synced),
 .clk(CLOCK_50), 
-.key_start(SW[3]),
-.key_pause(SW[2]), 
+.key_start(kbd_received_ascii_code == character_E),
+.key_pause(kbd_received_ascii_code == character_D), 
 .finish_read(finish_read_pulse), 
 .audio_in(data_from_flash),
 .audio_out(music_to_play),
 .addr_out(address_toread),
 .read_start(start_read_pulse),
-.read_direction(SW[1]),
-.restart_read(1'b1),
+.read_direction(direction),
+.restart_read(kbd_received_ascii_code == character_R),
 .reset_all(1'b1));
 
-
+// generate a clock signal for the address control fsm
 wire music_clock;
 wire music_clock_synced;
 wire [31:0] music_clock_div;
+
 // temporary clock divider (22kHz) - this number should change with keys
 assign music_clock_div = 32'h470;
 
@@ -364,9 +379,8 @@ Generate_Arbitrary_Divided_Clk32 synced_music_clock(
 .Reset(1'b1));
 
 
-
 // Capture rising edge of music_clock, generate synced clock
-async_trap_and_reset_gen_1_pulse(
+async_trap_and_reset_gen_1_pulse sync_music_clock(
 .async_sig(music_clock),
 .outclk(CLOCK_50),
 .out_sync_sig(music_clock_synced),
@@ -379,7 +393,6 @@ assign Sample_Clk_Signal = Clock_1KHz;
 //Audio Generation Signal
 //Note that the audio needs signed data - so convert 1 bit to 8 bits signed
 wire [15:0] audio_data = music_to_play;
-// {((~Sample_Clk_Signal)&audio_enable),{15{Sample_Clk_Signal&audio_enable}}}; //generate signed sample audio signal
 
 
 

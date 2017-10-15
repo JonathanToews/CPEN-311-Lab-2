@@ -65,13 +65,14 @@ begin
 		end
 	else
 		begin
-			// address control logic. Please check for glitches
-			if(state == INC_ADDR) addr_out <= addr_out + 1'b1;
+			// address control logic. These should actually be incorporated into the state bits.
+			if(restart_read | (state == FINISH)) addr_out <= 0;
+			else if(state == INC_ADDR) addr_out <= addr_out + 1'b1;
 			else if (state == DEC_ADDR) addr_out <= addr_out - 1'b1;
 			else if (state == INC_BY_2) addr_out <= addr_out + 2'b10;
 			else if (state == DEC_BY_2) addr_out <= addr_out - 2'b10;
 			else addr_out <= addr_out;
-		
+			
 			if(upper_audio_en) upper_audio <= audio_in;
 			else upper_audio <= upper_audio;
 	
