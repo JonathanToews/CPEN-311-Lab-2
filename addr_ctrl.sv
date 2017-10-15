@@ -107,7 +107,8 @@ begin
 		FLASH_UPPER:	if(finish_read)	next_state = DEC_ADDR;
 							else					next_state = FLASH_UPPER;
 		DEC_ADDR:								next_state = OUTPUT;
-		OUTPUT:			if((read_direction == FORWARD) & !(addr_out == (ENDOF_FLASH - 1'b1))) 	
+		OUTPUT:			if(restart_read)	next_state = CONTINUE;
+							else if((read_direction == FORWARD) & !(addr_out == (ENDOF_FLASH - 1'b1))) 	
 													next_state = INC_BY_2;
 							else if((read_direction == BACKWARD) & !(addr_out == STARTOF_FLASH))
 													next_state = DEC_BY_2;

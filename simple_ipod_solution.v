@@ -310,9 +310,12 @@ wire Sample_Clk_Signal;
 // Insert your code for Lab2 here!
 //
 
+parameter BASE_SPEED_CLK_DIV = 32'h470;
 parameter FORWARD = 1'b0;
 parameter BACKWARD = 1'b1;
 reg direction;
+
+
 
 always_ff@(posedge CLOCK_50)
 begin
@@ -364,10 +367,9 @@ addr_ctrl address_control_module(
 // generate a clock signal for the address control fsm
 wire music_clock;
 wire music_clock_synced;
-wire [31:0] music_clock_div;
+reg [31:0] music_clock_div = 32'h470;
 
 // temporary clock divider (22kHz) - this number should change with keys
-assign music_clock_div = 32'h470;
 
 // Generate the music clock (h470 for 22kHz)
 // music_clock_div changes to speed up or slow down clock            
@@ -387,7 +389,19 @@ async_trap_and_reset_gen_1_pulse sync_music_clock(
 .auto_reset(1'b1),
 .reset(1'b1));
             
-
+// speed control
+always_ff@(posedge CLOCK_50)
+	begin
+		if(speed_reset_event)
+			music_clock_div <= BASE_SPEED_CLK_DIV;
+		else if(speed_down_event)
+			music_clock_div <= music_clock_div - 1'b1;
+		else if(speed_up_event)
+			music_clock_div <= music_clock_div + 1'b1;
+		else
+			music_clock_div <= music_clock_div;
+	end
+				
 assign Sample_Clk_Signal = Clock_1KHz;
 
 //Audio Generation Signal
@@ -739,7 +753,7 @@ assign Seven_Seg_Data[5] = regd_actual_7seg_output[23:20];
 assign Seven_Seg_Data[6] = regd_actual_7seg_output[27:24];
 assign Seven_Seg_Data[7] = regd_actual_7seg_output[31:28];
     
-assign actual_7seg_output =  scope_sampling_clock_count;
+assign actual_7seg_output =  music_clock_div;
 
 
 
