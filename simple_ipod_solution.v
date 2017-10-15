@@ -95,7 +95,9 @@ module simple_ipod_solution(
     LCD_RS,
     LCD_RW,
 	 
-	 music_clock_synced
+	 music_clock,
+	 music_clock_synced,
+	 start_read_pulse
 
 );
 `define zero_pad(width,signal)  {{((width)-$size(signal)){1'b0}},(signal)}
@@ -103,7 +105,9 @@ module simple_ipod_solution(
 //  PORT declarations
 //=======================================================
 
+output music_clock;
 output music_clock_synced;
+output start_read_pulse;
 
 //////////// CLOCK //////////
 input                       CLOCK_50;
@@ -306,17 +310,18 @@ wire Sample_Clk_Signal;
 // Insert your code for Lab2 here!
 //
 
-wire start_pulse;
-wire finish_pulse;
-logic data_from_flash;
-wire address_toread;
+wire start_read_pulse;
+wire finish_read_pulse;
+wire [15:0] data_from_flash;
+wire [20:0] address_toread;
+wire [15:0] music_to_play;
 
 
-
+// flash read fsm
 flash_read_fsm flash_read_fsm_impl(
 .clk(CLOCK_50),
-.start(start_pulse),
-.finish(finish_pulse),
+.start(start_read_pulse),
+.finish(finish_read_pulse),
 .in_data(FL_DQ),
 .out_data(data_from_flash),
 .out_WE(FL_WE_N),
@@ -327,39 +332,54 @@ flash_read_fsm flash_read_fsm_impl(
 .out_addr(FL_ADDR),
 .reset_all(1'b1));
 
+// address control fsm
+addr_ctrl address_control_module(
+.clock_start(music_clock_synced),
+.clk(CLOCK_50), 
+.key_start(SW[3]),
+.key_pause(SW[2]), 
+.finish_read(finish_read_pulse), 
+.audio_in(data_from_flash),
+.audio_out(music_to_play),
+.addr_out(address_toread),
+.read_start(start_read_pulse),
+.read_direction(SW[1]),
+.restart_read(1'b1),
+.reset_all(1'b1));
+
 
 wire music_clock;
 wire music_clock_synced;
-wire music_clock_div;
+wire [31:0] music_clock_div;
 // temporary clock divider (22kHz) - this number should change with keys
 assign music_clock_div = 32'h470;
 
-// Generate the music clock (h479 for 22kHz)
+// Generate the music clock (h470 for 22kHz)
 // music_clock_div changes to speed up or slow down clock            
-Generate_Arbitrary_Divided_Clk32 
-Generate_Song_Speed_Clock(
+Generate_Arbitrary_Divided_Clk32 synced_music_clock(
 .inclk(CLK_50M),
 .outclk(music_clock),
 .outclk_Not(),
 .div_clk_count(music_clock_div),
-.Reset(1'h1));
+.Reset(1'b1));
+
 
 
 // Capture rising edge of music_clock, generate synced clock
-async_trap_and_reset_gen_1_pulse sync_clock(
+async_trap_and_reset_gen_1_pulse(
 .async_sig(music_clock),
-.outclk(CLK_50M),
+.outclk(CLOCK_50),
 .out_sync_sig(music_clock_synced),
 .auto_reset(1'b1),
 .reset(1'b1));
-
             
 
 assign Sample_Clk_Signal = Clock_1KHz;
 
 //Audio Generation Signal
 //Note that the audio needs signed data - so convert 1 bit to 8 bits signed
-wire [7:0] audio_data = {((~Sample_Clk_Signal)&audio_enable),{7{Sample_Clk_Signal&audio_enable}}}; //generate signed sample audio signal
+wire [15:0] audio_data = music_to_play;
+// {((~Sample_Clk_Signal)&audio_enable),{15{Sample_Clk_Signal&audio_enable}}}; //generate signed sample audio signal
 
 
 
@@ -473,7 +493,7 @@ Generate_LCD_scope_Clk(
 
 scope_capture LCD_scope_channelA(
 .clk(scope_clk),
-.the_signal(Sample_Clk_Signal),
+.the_signal(music_clock),
 .capture_enable(allow_run_LCD_scope & user_scope_enable), 
 .captured_data(scope_channelA),
 .reset(1'b1));
@@ -497,9 +517,9 @@ LCD_Scope_Encapsulated_pacoblaze LCD_LED_scope(
                     .clk(CLK_50M),  //don't touch
                           
                         //LCD Display values
-                      .InH(8'hAA),
-                      .InG(8'hBB),
-                      .InF(8'h01),
+                      .InH(audio_data[7:0]),
+                      .InG(address_toread[7:0]),
+                      .InF(FL_DQ),
                        .InE(8'h23),
                       .InD(8'h45),
                       .InC(8'h67),
@@ -751,8 +771,8 @@ audio_control(
   .oAUD_DACDAT(AUD_DACDAT),                 //  Audio CODEC DAC Data
   .AUD_BCLK(AUD_BCLK),                      //  Audio CODEC Bit-Stream Clock
   .oAUD_XCK(AUD_XCK),                       //  Audio CODEC Chip Clock
-  .audio_outL({actual_audio_data_left,8'b1}), 
-  .audio_outR({actual_audio_data_right,8'b1}),
+  .audio_outL({actual_audio_data_left}), 
+  .audio_outR({actual_audio_data_right}),
   .audio_right_clock(audio_right_clock), 
   .audio_left_clock(audio_left_clock)
 );
