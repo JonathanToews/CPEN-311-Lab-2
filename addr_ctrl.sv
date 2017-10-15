@@ -43,7 +43,7 @@ assign read_start 		= state[4];
 wire upper_audio_en, lower_audio_en, merge_audio_en, audio_en;
 
 assign upper_audio_en 	= state[3];
-assign upper_audio_en 	= state[2];
+assign lower_audio_en 	= state[2];
 assign merge_audio_en 	= state[1];
 assign audio_en			= state[0];
 
