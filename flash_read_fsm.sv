@@ -54,7 +54,7 @@ begin
 	case(state)
 			idle:				if(start) next_state = enable_chip;
 								else next_state = idle;
-			enable_chip:	next_state = enable_chip;
+			enable_chip:	next_state = enable_output;
 			enable_output:	next_state = wait_read_1;
 			wait_read_1:	next_state = wait_read_2;
 			wait_read_2:	next_state = wait_read_3;
