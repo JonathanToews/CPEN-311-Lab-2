@@ -23,18 +23,20 @@ bit 5-8: state bits
 bit 9: future expansion
 */
 
-localparam IDLE			= 10'b00000_00000;
-localparam CONTINUE		= 10'b00001_00001;
-localparam FLASH_LOWER	= 10'b00010_10001;
-localparam INC_ADDR		= 10'b00011_00101;
-localparam FLASH_UPPER	= 10'b00100_10001;
-localparam DEC_ADDR		= 10'b00101_01001;
-localparam OUTPUT			= 10'b00110_00011;
-localparam INC_BY_2		= 10'b00111_00001;
-localparam DEC_BY_2		= 10'b01000_00001;
-localparam FINISH			= 10'b01001_00001;
+typedef enum reg [9:0] {
+ IDLE			= 10'b00000_00000,
+ CONTINUE		= 10'b00001_00001,
+ FLASH_LOWER	= 10'b00010_10001,
+ INC_ADDR		= 10'b00011_00101,
+ FLASH_UPPER	= 10'b00100_10001,
+ DEC_ADDR		= 10'b00101_01001,
+ OUTPUT			= 10'b00110_00011,
+ INC_BY_2		= 10'b00111_00001,
+ DEC_BY_2		= 10'b01000_00001,
+ FINISH			= 10'b01001_00001
+} valid_states;
 
-
+valid_states state, next_state;
 
 // state bit outputs
 assign read_start 		= state[4];
@@ -47,9 +49,7 @@ assign lower_audio_en 	= state[2];
 assign merge_audio_en 	= state[1];
 assign audio_en			= state[0];
 
-// state and audio registers
-logic [9:0] next_state;
-reg [9:0] state;
+// audio registers
 reg [7:0] upper_audio;
 reg [7:0] lower_audio;
 
